@@ -1,0 +1,160 @@
+1. ATRIBUTOS DEL USUARIO (MODELO USER)
+const mongoose = require("mongoose");
+
+const UserSchema = new mongoose.Schema({
+  email: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  passwordResetToken: String,
+  passwordResetTokenExpires: Date,
+  verificado: {
+    type: Boolean,
+    default: false
+  }
+});
+
+module.exports = mongoose.model("User", UserSchema);
+
+2. MODELO TOKEN
+const mongoose = require("mongoose");
+
+const TokenSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+  token: String,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+module.exports = mongoose.model("Token", TokenSchema);
+
+3. EMAIL (NODEMAILER)
+npm install nodemailer
+const nodemailer = require("nodemailer");
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "tuemail@gmail.com",
+    pass: "tucontraseña"
+  }
+});
+
+function sendWelcomeEmail(email, link) {
+  return transporter.sendMail({
+    from: "Sistema Bicicletas",
+    to: email,
+    subject: "Bienvenido - Verifica tu cuenta",
+    text: `Bienvenido! Verifica tu cuenta aquí: ${link}`
+  });
+}
+
+module.exports = { sendWelcomeEmail };
+
+EMAIL DE BIENVENIDA + VERIFICACIÓN
+const { sendWelcomeEmail } = require("./utils/email");
+const Token = require("./models/Token");
+
+const token = new Token({
+  user: user._id,
+  token: Math.random().toString(36).substring(2)
+});
+
+await token.save();
+
+const link = `http://localhost:3000/verify/${token.token}`;
+
+await sendWelcomeEmail(user.email, link);
+
+VISTAS (LOGIN / RECUPERAR PASSWORD)
+<h2>Login</h2>
+
+<form method="POST" action="/login">
+  <input type="email" name="email" placeholder="Email" />
+  <input type="password" name="password" placeholder="Password" />
+  <button>Entrar</button>
+</form>
+
+
+<h2>Recuperar contraseña</h2>
+
+<form method="POST" action="/forgot">
+  <input type="email" name="email" />
+  <button>Enviar</button>
+</form>
+
+6. PASSPORT (serialize / deserialize)
+const passport = require("passport");
+const LocalStrategy = require("passport-local").Strategy;
+const User = require("./models/User");
+
+passport.use(new LocalStrategy(
+  async (email, password, done) => {
+    const user = await User.findOne({ email });
+
+    if (!user) return done(null, false);
+
+    if (user.password !== password) return done(null, false);
+
+    return done(null, user);
+  }
+));
+
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  const user = await User.findById(id);
+  done(null, user);
+});
+
+
+7. BLOQUEO DE URLS (middleware)
+function isLoggedIn(req, res, next) {
+  if (req.isAuthenticated()) return next();
+  res.redirect("/login");
+}
+
+POSTMAN + TOKEN (JWT)
+npm install jsonwebtoken
+
+
+const jwt = require("jsonwebtoken");
+
+const token = jwt.sign(
+  { id: user._id },
+  "secreto",
+  { expiresIn: "1h" }
+);
+
+res.json({ token });
+
+
+function verifyToken(req, res, next) {
+  const token = req.headers["authorization"];
+
+  if (!token) {
+    return res.status(403).send("No autenticado");
+  }
+
+  jwt.verify(token, "secreto", (err, decoded) => {
+    if (err) return res.status(401).send("Token inválido");
+
+    req.user = decoded;
+    next();
+  });
+}
+
+10. POSTMAN
+{ "token": "abc123" }
