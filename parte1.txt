@@ -1,0 +1,141 @@
+app.js:
+const express = require("express");
+const path = require("path");
+const bicicletasRoutes = require("./routes/bicicletas");
+
+const app = express();
+
+app.use(express.json());
+app.use(express.static("public"));
+
+
+app.get("/", (req, res) => {
+  res.send("Bienvenido a Express 🚀");
+});
+
+// rutas API
+app.use("/api", bicicletasRoutes);
+
+// servidor
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
+
+2. package.json (con devstart)
+{
+  "name": "bicicletas-app",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "devstart": "nodemon app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
+
+3. MODELO Bicicleta (models/Bicicleta.js)class Bicicleta {
+  constructor(id, nombre, lat, lng) {
+    this.id = id;
+    this.nombre = nombre;
+    this.lat = lat;
+    this.lng = lng;
+  }
+}
+
+module.exports = Bicicleta;
+
+4. ROUTES API (routes/bicicletas.js)
+const express = require("express");
+const router = express.Router();
+
+let bicicletas = [
+  { id: 1, nombre: "Bike 1", lat: 14.0, lng: -87.2 },
+  { id: 2, nombre: "Bike 2", lat: 14.01, lng: -87.21 }
+];
+
+// GET todas
+router.get("/bicicletas", (req, res) => {
+  res.json(bicicletas);
+});
+
+// POST nueva
+router.post("/bicicletas", (req, res) => {
+  const nueva = req.body;
+  bicicletas.push(nueva);
+  res.json(nueva);
+});
+
+// DELETE
+router.delete("/bicicletas/:id", (req, res) => {
+  bicicletas = bicicletas.filter(b => b.id != req.params.id);
+  res.json({ msg: "Eliminada" });
+});
+
+module.exports = router;
+
+
+
+
+
+
+HTML (public/index.html)
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mapa Bicicletas</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map { height: 500px; }
+  </style>
+</head>
+<body>
+
+<h2>Mapa de Bicicletas 🚲</h2>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="map.js"></script>
+
+</body>
+</html>
+
+
+6. MAPA + MARCADORES (public/map.js)
+const map = L.map('map').setView([14.0, -87.2], 13);
+
+// mapa base
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: 'OpenStreetMap'
+}).addTo(map);
+
+// bicicletas (simuladas)
+const bicicletas = [
+  { nombre: "Bike 1", lat: 14.0, lng: -87.2 },
+  { nombre: "Bike 2", lat: 14.01, lng: -87.21 }
+];
+
+// marcadores
+bicicletas.forEach(bike => {
+  L.marker([bike.lat, bike.lng])
+    .addTo(map)
+    .bindPopup(bike.nombre);
+});
+
+
+7. README.md
+# Proyecto Bicicletas 🚲
+
+Proyecto en Node.js + Express con mapa interactivo.
+
+## Funcionalidades
+- API de bicicletas
+- Mapa con Leaflet
+- Marcadores de bicicletas
+- CRUD básico
+
