@@ -1,0 +1,130 @@
+app.js (con Mongoose)
+const express = require("express");
+const mongoose = require("mongoose");
+
+const app = express();
+app.use(express.json());
+
+// conexión Mongo local
+mongoose.connect("mongodb://127.0.0.1:27017/red_bicicletas");
+
+mongoose.connection.once("open", () => {
+  console.log("Mongo conectado: red_bicicletas");
+});
+
+// ruta base
+app.get("/", (req, res) => {
+  res.send("API Bicicletas funcionando 🚲");
+});
+
+app.listen(3000, () => {
+  console.log("Servidor en puerto 3000");
+});
+
+
+MODELO Bicicleta (Mongoose)
+const mongoose = require("mongoose");
+
+const BicicletaSchema = new mongoose.Schema({
+  nombre: String,
+  color: String,
+  lat: Number,
+  lng: Number
+});
+
+module.exports = mongoose.model("Bicicleta", BicicletaSchema);
+
+4. API CRUD (routes/bicicletas.js)
+
+const express = require("express");
+const router = express.Router();
+const Bicicleta = require("../models/Bicicleta");
+
+// GET
+router.get("/bicicletas", async (req, res) => {
+  const bikes = await Bicicleta.find();
+  res.json(bikes);
+});
+
+// POST
+router.post("/bicicletas", async (req, res) => {
+  const bike = new Bicicleta(req.body);
+  await bike.save();
+  res.json(bike);
+});
+
+// DELETE
+router.delete("/bicicletas/:id", async (req, res) => {
+  await Bicicleta.findByIdAndDelete(req.params.id);
+  res.json({ msg: "eliminada" });
+});
+
+module.exports = router;
+
+
+
+. TEST API (spec/bicicleta_api_test.spec.js)
+const request = require("request");
+
+const base_url = "http://localhost:3000/api/bicicletas";
+
+describe("API Bicicletas", () => {
+
+  it("GET devuelve bicicletas", (done) => {
+    request.get(base_url, (err, res) => {
+      expect(res.statusCode).toBe(200);
+      done();
+    });
+  });
+
+  it("POST crea bicicleta", (done) => {
+    request.post({
+      url: base_url,
+      json: { nombre: "Bike Test", lat: 14, lng: -87 }
+    }, (err, res) => {
+      expect(res.statusCode).toBe(200);
+      done();
+    });
+  });
+
+});
+
+
+
+6. TEST MODELO (persistencia)
+const Bicicleta = require("../models/Bicicleta");
+
+describe("Modelo Bicicleta", () => {
+
+  it("crear bicicleta en BD", async () => {
+    const bike = new Bicicleta({
+      nombre: "Persistente",
+      color: "rojo",
+      lat: 14,
+      lng: -87
+    });
+
+    const saved = await bike.save();
+    expect(saved.nombre).toBe("Persistente");
+  });
+
+});
+
+
+
+7. package.json (tests)
+"scripts": {
+  "start": "node app.js",
+  "test": "jasmine",
+  "devstart": "nodemon app.js"
+}
+
+
+INSTALAR DEPENDENCIAS
+npm install express mongoose
+npm install --save-dev jasmine request nodemon
+npx jasmine init
+
+
+9. EJECUTAR TESTS
+npm test
