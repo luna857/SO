@@ -1,0 +1,127 @@
+parte4
+1. APP PUBLICADA EN HEROKU
+📌 Pasos básicos
+Instalar Heroku CLI
+npm install -g heroku
+Login
+heroku login
+Crear app
+heroku create nombre-app
+Subir código
+git push heroku main
+🗄️ 2. USUARIO EN MONGO (Atlas o Compass)
+
+✔ Debes ver en MongoDB Compass o Atlas:
+
+colección users
+documentos reales creados (email, password, etc.)
+⚙️ 3. VARIABLES DE ENTORNO
+
+📌 .env
+
+NODE_ENV=production
+MONGO_URI=mongodb+srv://usuario:password@cluster.mongodb.net/red_bicicletas
+
+📌 app.js
+
+require("dotenv").config();
+
+const mongoose = require("mongoose");
+
+mongoose.connect(process.env.MONGO_URI);
+🏠 4. MONGO LOCAL FUNCIONANDO
+
+📌 local:
+
+mongoose.connect("mongodb://127.0.0.1:27017/red_bicicletas");
+
+✔ Esto sigue funcionando en desarrollo
+
+☁️ 5. HEROKU USA MONGO ATLAS
+
+📌 lógica típica:
+
+const mongoURL =
+  process.env.NODE_ENV === "production"
+    ? process.env.MONGO_URI
+    : "mongodb://127.0.0.1:27017/red_bicicletas";
+
+mongoose.connect(mongoURL);
+📧 6. EMAILS EN LOCAL (ETHEREAL)
+
+📌 desarrollo:
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.ethereal.email",
+  port: 587,
+  auth: {
+    user: "usuario_ethereal",
+    pass: "password"
+  }
+});
+
+✔ Esto SOLO en local
+
+📧 7. SENDGRID EN PRODUCCIÓN
+
+📌 instalar:
+
+npm install @sendgrid/mail
+
+📌 configuración:
+
+const sgMail = require("@sendgrid/mail");
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+function sendEmail(email, link) {
+  return sgMail.send({
+    to: email,
+    from: "tuemail@gmail.com",
+    subject: "Verificación",
+    text: `Verifica tu cuenta: ${link}`
+  });
+}
+
+✔ En producción usa SendGrid
+
+👤 8. findOneOrCreateByGoogle
+
+📌 models/User.js
+
+UserSchema.statics.findOneOrCreateByGoogle = async function(profile) {
+  let user = await this.findOne({ email: profile.emails[0].value });
+
+  if (user) return user;
+
+  user = new this({
+    email: profile.emails[0].value,
+    verificado: true
+  });
+
+  await user.save();
+  return user;
+};
+🔐 9. VALIDACIÓN TOKEN FACEBOOK
+
+📌 middleware:
+
+function verifyFacebookToken(req, res, next) {
+  const token = req.headers["authorization"];
+
+  if (!token) return res.status(403).send("No token");
+
+  // aquí iría validación con Facebook Graph API
+  next();
+}
+📊 10. NEW RELIC
+
+📌 instalar:
+
+npm install newrelic
+
+📌 app.js (PRIMERA LÍNEA IMPORTANTE):
+
+require("newrelic");
+
+const express = require("express");
